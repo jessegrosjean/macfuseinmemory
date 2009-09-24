@@ -12,9 +12,6 @@
 #import "Item.h"
 
 
-// TODO: Respond with proper error codes on failure.
-// TODO: Where do attributes come from when creating symlinks
-
 @interface NSError (POSIX)
 + (NSError *)errorWithPOSIXCode:(int)code;
 @end
@@ -65,7 +62,7 @@
 - (BOOL)setAttributes:(NSDictionary *)attributes ofItemAtPath:(NSString *)path userData:(id)userData error:(NSError **)error {
 	Item *item = [self itemForPath:path error:error];
 	if (item) {
-		[item.attributes addEntriesFromDictionary:attributes];
+		[item applyAttributes:attributes];
 		return YES;
 	}
 	return NO; 
@@ -83,12 +80,8 @@
 }
 
 - (int)readFileAtPath:(NSString *)path userData:(id)userData buffer:(char *)buffer size:(size_t)size offset:(off_t)offset error:(NSError **)error {
-	Item *item = [self itemForPath:path error:error];
-	if (item) {
-		NSUInteger availible = [item.fileContents length] - offset;
-		NSUInteger read = MIN(availible, size);
-		[item.fileContents getBytes:buffer range:NSMakeRange(offset, read)];
-		return read;
+	if (userData) {
+		return [userData writeFileContentsInto:buffer size:size offset:offset];
 	}
 	return -1;
 }
@@ -96,14 +89,7 @@
 - (int)writeFileAtPath:(NSString *)path userData:(id)userData buffer:(const char *)buffer size:(size_t)size offset:(off_t)offset error:(NSError **)error {
 	Item *item = [self itemForPath:path error:error];
 	if (item) {
-		NSInteger length = [item.fileContents length] - (size + offset);
-		if (length < 0) {
-			length = [item.fileContents length] - offset;
-		}
-		[item.fileContents replaceBytesInRange:NSMakeRange(offset, length) withBytes:buffer length:size];
-		[item.attributes setObject:[NSDate date] forKey:NSFileModificationDate];
-		[item.attributes setObject:[NSNumber numberWithUnsignedInteger:[item.fileContents length]] forKey:NSFileSize];
-		return size;
+		return [item readFileContentsFrom:buffer size:size offset:offset];
 	}	
 	return -1;
 }

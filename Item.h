@@ -27,12 +27,18 @@
 @property(readonly) BOOL isFile;
 @property(readonly) BOOL isDirectory;
 @property(readonly) BOOL isSymbolicLink;
+
+@property(retain) NSString *name;
 @property(readonly) Item *parent;
 @property(readonly) Item *root;
-@property(retain) NSString *name;
-@property(retain) NSString *linkDestination;
-@property(retain) NSMutableData *fileContents;
-@property(retain) NSMutableDictionary *attributes;
+@property(readonly) NSString *linkDestination;
+
+@property(readonly) NSDictionary *attributes;
+- (void)applyAttributes:(NSDictionary *)newAttributes;
+
+@property(readonly) NSData *fileContents;
+- (int)writeFileContentsInto:(char *)buffer size:(size_t)size offset:(off_t)offset;
+- (int)readFileContentsFrom:(const char *)buffer size:(size_t)size offset:(off_t)offset;		
 
 @property(readonly) NSSet *children;
 - (void)addChildrenObject:(Item *)child;

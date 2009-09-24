@@ -26,10 +26,11 @@
 - (id)initWithName:(NSString *)aName linkDestination:(NSString *)aLinkDestination fileType:(NSString *)fileType attributes:(NSDictionary *)aDictionary {
 	if (self = [super init]) {
 		self.name = aName;
-		self.linkDestination = aLinkDestination;
-		attributes = [[NSMutableDictionary alloc] init];
+		NSDate *date = [NSDate date];
+		attributes = [[NSMutableDictionary alloc] initWithObjectsAndKeys:date, NSFileCreationDate, date, NSFileModificationDate, nil];
 		[attributes addEntriesFromDictionary:aDictionary];
 		[attributes setObject:fileType forKey:NSFileType];
+		linkDestination = [aLinkDestination retain];
 		fileContents = [[NSMutableData data] retain];
 		childrenByName = [[NSMutableDictionary dictionary] retain];
 	}
@@ -58,6 +59,7 @@
 	return [[attributes fileType] isEqualToString:NSFileTypeSymbolicLink];
 }
 
+@synthesize name;
 @synthesize parent;
 
 - (Item *)root {
@@ -67,16 +69,34 @@
 	return self;
 }
 
-@synthesize name;
 @synthesize linkDestination;
-@synthesize fileContents;
-@synthesize attributes;
 
-- (NSMutableDictionary *)attributes {
-	if (![attributes fileCreationDate]) [attributes setObject:[NSDate date] forKey:NSFileCreationDate];
-	if (![attributes fileModificationDate]) [attributes setObject:[NSDate date] forKey:NSFileModificationDate];
-	[attributes setObject:[NSNumber numberWithUnsignedInteger:[fileContents length]] forKey:NSFileSize];
+- (NSDictionary *)attributes {
 	return attributes;
+}
+
+- (void)applyAttributes:(NSDictionary *)newAttributes {
+	[attributes addEntriesFromDictionary:newAttributes];
+}
+
+@synthesize fileContents;
+
+- (int)writeFileContentsInto:(char *)buffer size:(size_t)size offset:(off_t)offset {
+	NSUInteger availible = [fileContents length] - offset;
+	NSUInteger read = MIN(availible, size);
+	[fileContents getBytes:buffer range:NSMakeRange(offset, read)];
+	return read;
+}
+
+- (int)readFileContentsFrom:(const char *)buffer size:(size_t)size offset:(off_t)offset {
+	NSInteger length = [fileContents length] - (size + offset);
+	if (length < 0) {
+		length = [fileContents length] - offset;
+	}
+	[fileContents replaceBytesInRange:NSMakeRange(offset, length) withBytes:buffer length:size];
+	[attributes setObject:[NSDate date] forKey:NSFileModificationDate];
+	[attributes setObject:[NSNumber numberWithUnsignedInteger:[fileContents length]] forKey:NSFileSize];
+	return size;
 }
 
 - (NSSet *)children {
