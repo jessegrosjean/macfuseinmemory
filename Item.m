@@ -104,10 +104,14 @@
 }
 
 - (void)addChildrenObject:(Item *)child {
+	child->parent = self;
+	[attributes setObject:[NSDate date] forKey:NSFileModificationDate];
 	[childrenByName setObject:child forKey:child.name];
 }
 
 - (void)removeChildrenObject:(Item *)child {
+	child->parent = nil;
+	[attributes setObject:[NSDate date] forKey:NSFileModificationDate];
 	[childrenByName removeObjectForKey:child.name];
 }
 
